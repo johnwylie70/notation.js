@@ -6,31 +6,63 @@
 // Use: click or tap below the music to play the tune, and again to stop it. Tap a note to hear it.
 // Try changing: the notes; "quarter" to "eighth"; tempo: 100 to 160; "bell" to "keys" or "lead"; key: "C" to "G" (and the notes to match).
 
-// makeSheet and showNotes are sheet music (notation.js, which comes with pictures.js as its sound does).
-const sheet = makeSheet({ title: "Twinkle, twinkle, little star", tempo: 100, key: "C" })
-for (const name of ["C4", "C4", "G4", "G4", "A4", "A4"]) sheet.add(name, "quarter")
+// The tune: a page of music with a title, a speed and a key.
+const sheet = makeSheet({
+  title: "Twinkle, twinkle, little star",
+  tempo: 100,
+  key: "C",
+})
+
+// Twinkle, twinkle, little ...
+for (const name of ["C4", "C4", "G4", "G4", "A4", "A4"]) {
+  sheet.add(name, "quarter")
+}
+// ... star (a long note)
 sheet.add("G4", "half")
-for (const name of ["F4", "F4", "E4", "E4", "D4", "D4"]) sheet.add(name, "quarter")
+
+// How I wonder what you ...
+for (const name of ["F4", "F4", "E4", "E4", "D4", "D4"]) {
+  sheet.add(name, "quarter")
+}
+// ... are
 sheet.add("C4", "half")
 
+// Show the sheet, and choose the sound that plays it.
 const page = showNotes(sheet, { voice: "bell" })
-const stars = []      // one for each note that has played
 
-// Called as each note begins: a higher note is a bigger star.
-page.onNote = (note) => stars.push({ x: random(40, width - 40), y: height - 30, size: 8 + (note.note - 55), age: 0 })
+// One star for each note that has played.
+const stars = []
 
+// As each note begins, make a star. A higher note is a bigger star.
+page.onNote = (note) => {
+  stars.push({
+    x: random(40, width - 40),
+    y: height - 30,
+    size: 8 + (note.note - 55),
+    age: 0,
+  })
+}
+
+// A click or a tap: play the tune, or stop it.
 function onMouseDown() {
   if (page.playing) page.stop()
   else page.play()
 }
 
+// Many times a second: move the stars. dt is seconds since last time.
 function update(dt) {
-  for (const s of stars) { s.y -= 90 * dt; s.age += dt }
+  for (const s of stars) {
+    s.y -= 90 * dt
+    s.age += dt
+  }
+  // A star is taken away after four seconds.
   while (stars.length && stars[0].age > 4) stars.shift()
 }
 
+// Draw the sky, the stars and the words. The music draws itself.
 function draw() {
   background("midnightblue")
   for (const s of stars) star(s.x, s.y, s.size, 5, "gold")
-  text(page.playing ? "Click to stop" : "Click here to play", width / 2, height - 24, "white", 18, "centre")
+  const words = page.playing ? "Click to stop" : "Click here to play"
+  text(words, width / 2, height - 24, "white", 18, "centre")
 }
