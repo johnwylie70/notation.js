@@ -2,9 +2,9 @@
   "version": 1,
   "demos": [
     {
-      "id": "sheet-music",
-      "title": "Sheet Music",
-      "summary": "A tune is one line of notes. It is written out as sheet music and each note lights up as it plays. Change the notes and both the music and the page change. About 20 lines of Python.",
+      "id": "twinkle",
+      "title": "Twinkle",
+      "summary": "Twinkle, twinkle, little star, written as code, one line a note, and shown as sheet music. Each note lights as it sounds, and a star goes up for it. Change the notes and both the tune and the page change.",
       "kind": "html",
       "entry": "main.py",
       "files": [

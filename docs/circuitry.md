@@ -111,7 +111,7 @@ A page is never the size of the scene (it is a sheet of paper over part of it), 
 
 ## The demo
 
-`demos/sheet-music/` here is in the shape of `public/demos/*`: `main.py` (the entry), `main.js` (its twin, the same program line for line), and `thumbnail.jpg` at 600 × 600; `demos/index.json` has its entry in the form of `public/demos/index.json` (`tags: ["learn"]`). It has not been copied anywhere: the catalogue's test pins the list of learn demos. The Python file imports `pyctures`, `synths`, `pydials` and `pynotation`, so it runs in the app once step 3 above is done; the JavaScript one once steps 1 and 2 are.
+`demos/twinkle/` here is in the shape of `public/demos/*`: `main.py` (the entry), `main.js` (its twin, the same program line for line), and `thumbnail.jpg` at 600 × 600; `demos/index.json` has its entry in the form of `public/demos/index.json` (`tags: ["learn"]`). It is this library's own `examples/twinkle.js`, in the form of the app's learn demos, without the first lines that fetched the library. It has not been copied anywhere: the catalogue's test pins the list of learn demos. The Python file imports `pyctures` and `pynotation` (which brings the sound), so it runs in the app once step 3 above is done; the JavaScript one once steps 1 and 2 are. `demos/prove-twinkle.mjs` runs the Python file with `pyctures run` in Chromium and WebKit and checks that the sound is on, that every note lights in order, and that the synth is sounding each note while it is lit.
 
 ## Words for the help pages
 
