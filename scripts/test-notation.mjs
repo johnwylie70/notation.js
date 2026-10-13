@@ -419,6 +419,25 @@ async function browserCases(name, browser) {
   got = await run(page, () => { const pos = window.song.position; window.song.stop(); return [pos.order, pos.row >= 16 && pos.row < 30, window.p.bar] })
   check(name, 'a tap on a bar sends the song there, and the page follows', got, [2, true, 6])
 
+  // --- a page that shows a song plays the song itself
+  got = await run(page, async () => {
+    const S = fresh()
+    lib.useSound(window.synths)
+    const json = await (await fetch('/examples/songs/night_drive.json')).json()
+    const p = S.showNotes(json, { channels: [3, 1], patches: { tune: 'bell' } })
+    const began = []
+    p.onNote = (note) => began.push(note.staff)
+    p.play()
+    const start = performance.now()
+    while (performance.now() - start < 6000 && !(p.beat > 3)) await frames(2)
+    const during = { playing: p.playing, state: p.song.position.state, beat: p.beat > 3, staves: [...new Set(began)].sort(), lit: p.sounding.length > 0 }
+    const song = p.song
+    p.stop()
+    await wait(300)
+    return { during, after: [p.playing, song.position.state, p.sounding, p.cursor.style.display] }
+  })
+  check(name, 'page.play() on a page that shows a song plays that song through the sound library and follows it on every staff; page.stop() stops the song', got, { during: { playing: true, state: 'playing', beat: true, staves: [0, 1], lit: true }, after: [false, 'stopped', [], 'none'] })
+
   // --- taps: a note is heard and said
   got = await run(page, async () => {
     const S = fresh()
