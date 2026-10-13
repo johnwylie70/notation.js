@@ -1552,13 +1552,28 @@ class Page {
     const bpm = o.bpm || score.tempo, from = (o.from || 0) * TICKS, late = o.latency ?? 0.04
     this.playing = true
     this.source = () => {
-      const t = ((theirs ? theirs() : nowSeconds() - this.stage.offset) - late - o.at) * bpm / 60 + from / TICKS
+      // (The host's clock as the page's sound reckons it, when it does; else as this page has, from what the host has sent.)
+      const now = theirs ? theirs() : null
+      const t = ((typeof now === 'number' ? now : nowSeconds() - this.stage.offset) - late - o.at) * bpm / 60 + from / TICKS
       if (t * TICKS >= score.length) { this.finish(); return null }
       return t * TICKS < from ? null : t
     }
   }
+  /**
+   * For a host whose song plays in this page: follow the page's own sound, where it can say the song's place
+   * (`songPosition()`), and tell the host so ("direct"), which then need hand nothing on. A tapped bar is told to the host.
+   */
+  followSound() {
+    const ask = method(this.sound, 'songPosition', 'song_position')
+    if (!ask) return
+    this.feeding = true
+    this.direct = true
+    this.follow({ get position() { return ask() } })
+    this.stage.tell(this.id, 'direct', 1)
+  }
   /** For a host that reads the song's place itself: where the song is now, as song.position gives it. */
   feed(position) {
+    if (this.direct) return
     this.fed = position
     if (!this.feeding) { this.feeding = true; this.follow({ get position() { return this.page.fed }, page: this }) }
   }
@@ -2078,7 +2093,7 @@ function api(stage) {
     },
     /**
      * What happened is handed over once a frame: { t: JSON text of a flat list of page id, what, details… }. `what` is "note",
-     * "bar", "tap", "right", "wrong", "result", "done", "words", "seek" or "again".
+     * "bar", "tap", "right", "wrong", "result", "done", "words", "seek", "again" or "direct".
      */
     listen: (fn) => { stage.listener = fn },
     /** A host that must look at something every frame is called every frame instead, once it has answered the last call with ack(). */
