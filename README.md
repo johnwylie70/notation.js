@@ -28,6 +28,8 @@ function draw() {
 
 The notes are written the way synths.js's `playNotes` takes them: a note is a letter and a number (`"C4"` is middle C, `"F#3"`, `"Bb5"`), `-` is a rest, `:2` makes a note last two steps, and `"quarter"` says how long a step is. The key, the clef and the bars are worked out for you. Tap a note to hear it.
 
+Two notes joined by a curved line are one note, held: that is a tie, and it is how a note is written when it lasts across a beat or a bar line. Both light together and you hear one sound.
+
 **2. Play it, and watch it go.**
 
 ```js
