@@ -3,9 +3,9 @@
 // Tap a bar to play from there; tap a note to hear it.
 // Try changing: channels: [3, 1] to [0, 3] or [3, 1, 2] (2 is the drums); grand: true; paper: "dark".
 //
-// Run it:   pictures run song.js     (staves.js and songs/night_drive.json sit beside this file)
+// Run it:   pictures run song.js     (notation.js and songs/night_drive.json sit beside this file)
 
-const { showNotes, useSound } = await use("staves.js")
+const { showNotes, useSound } = await use("notation.js")
 useSound({ playNote, soundTime })
 
 const written = await loadJSON("songs/night_drive.json")     // the song's own file: it is what gets written out

@@ -2,9 +2,9 @@
 // plays: each note lights as it sounds, and a star goes up for it.
 // Try changing: the notes; "quarter" to "eighth"; tempo: 100 to 160; key: "C" to "G" (and the notes to match).
 //
-// Run it:   pictures run twinkle.js     (staves.js sits beside this file)
+// Run it:   pictures run twinkle.js     (notation.js sits beside this file)
 
-const { makeSheet, showNotes, useSound } = await use("staves.js")
+const { makeSheet, showNotes, useSound } = await use("notation.js")
 useSound({ makeSynth, playNote, soundTime })      // what the page plays through, and keeps time by
 
 const sheet = makeSheet({ title: "Twinkle, twinkle, little star", tempo: 100, key: "C" })

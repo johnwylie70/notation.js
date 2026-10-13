@@ -1,12 +1,12 @@
-# staves.js
+# notation.js
 
 [![MIT licence](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
 
 ![A song playing with its tune and bass written out on two staves: the notes sounding now are orange and a line marks the place in the bar](docs/images/song.png)
 
-staves.js writes music out as notes on a staff, in plain JavaScript, and lights the notes as they play. It is for any age and any level: you give it a tune in one line and sheet music appears; you play the tune and each note lights as it sounds; you can play along on a keyboard and it tells you how you did. It draws clefs, keys, time signatures, notes and rests of every usual length, dots, ties, beams, chords, ledger lines, bar lines and bar numbers, on as many lines as your screen needs. It is a sibling of [pictures.js](https://github.com/johnwylie70/pictures.js), [synths.js](https://github.com/johnwylie70/synths.js) and [dials.js](https://github.com/johnwylie70/dials.js), designed for projects made in [Circuitry Studio](https://www.circuitry.dev), and runs anywhere a browser does.
+notation.js writes music out as notes on a staff, in plain JavaScript, and lights the notes as they play. It is for any age and any level: you give it a tune in one line and sheet music appears; you play the tune and each note lights as it sounds; you can play along on a keyboard and it tells you how you did. It draws clefs, keys, time signatures, notes and rests of every usual length, dots, ties, beams, chords, ledger lines, bar lines and bar numbers, on as many lines as your screen needs. It is a sibling of [pictures.js](https://github.com/johnwylie70/pictures.js), [synths.js](https://github.com/johnwylie70/synths.js) and [dials.js](https://github.com/johnwylie70/dials.js), designed for projects made in [Circuitry Studio](https://www.circuitry.dev), and runs anywhere a browser does.
 
-Prefer Python? [staves](../staves-py) is the same library for [Pyctures](https://github.com/johnwylie70/pyctures).
+Prefer Python? [pynotation](../pynotation) is the same library for [Pyctures](https://github.com/johnwylie70/pyctures).
 
 ## Start with four small scenes
 
@@ -15,7 +15,7 @@ Each one is a whole program for a pictures.js scene. [How to run one](#run-it) i
 **1. A tune, written out.**
 
 ```js
-const { showNotes } = await use("staves.js")
+const { showNotes } = await use("notation.js")
 
 showNotes("E4 D4 C4 D4 E4 E4 E4:2", "quarter", { title: "Mary had a little lamb" })
 
@@ -31,7 +31,7 @@ The notes are written the way synths.js's `playNotes` takes them: a note is a le
 **2. Play it, and watch it go.**
 
 ```js
-const { showNotes, useSound } = await use("staves.js")
+const { showNotes, useSound } = await use("notation.js")
 useSound({ makeSynth, playNote, soundTime })     // the sound the page plays through, and keeps time by
 
 const page = showNotes("C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2", "quarter", { tempo: 100 })
@@ -50,7 +50,7 @@ function draw() {
 **3. Follow a song.**
 
 ```js
-const { showNotes, useSound } = await use("staves.js")
+const { showNotes, useSound } = await use("notation.js")
 useSound({ playNote, soundTime })
 
 const written = await loadJSON("songs/night_drive.json")
@@ -67,7 +67,7 @@ A tracker song (our own JSON kind, or a MOD or XM file the sound library has pac
 **4. Play along.**
 
 ```js
-const { showNotes } = await use("staves.js")
+const { showNotes } = await use("notation.js")
 
 const lead = makeSynth("keys")
 const page = showNotes("E4 D4 C4 D4 E4 E4 E4:2", "quarter")
@@ -86,7 +86,7 @@ The line waits at each note until you play it. The key to press is lit. A right 
 
 ## Run it
 
-Put `staves.js` beside your scene and run the scene with pictures.js:
+Put `notation.js` beside your scene and run the scene with pictures.js:
 
 ```
 npx pictures run twinkle.js
@@ -99,13 +99,13 @@ On a page of your own, with no pictures.js, it fills any element:
 ```html
 <div id="music" style="width: 600px; height: 300px"></div>
 <script type="module">
-  import { staves } from "./staves.js"
-  const { showNotes } = staves(document.getElementById("music"))
+  import { notation } from "./notation.js"
+  const { showNotes } = notation(document.getElementById("music"))
   showNotes("C4 E4 G4 C5:4", "quarter", { at: "fill" })
 </script>
 ```
 
-It needs no sound to draw music. Nothing else is loaded: staves.js is one file, and a page that does not use it never fetches it.
+It needs no sound to draw music. Nothing else is loaded: notation.js is one file, and a page that does not use it never fetches it.
 
 ## What you can show
 
@@ -186,11 +186,11 @@ Drag the music with a finger, or turn the mouse wheel, to look ahead; it goes ba
 
 ### The sound it plays through
 
-staves.js names no sound library. A sound is anything with some of `soundTime()`, `playNote(note, seconds)`, `makeSynth(name)` and `playNotes(text, step, { at })`: `useSound(sound)` hands one over, and `{ sound }` gives one page its own. In a pictures.js scene those are the scene's own sound functions: `useSound({ makeSynth, playNote, soundTime })`. On a page that imports synths.js: `import * as synths from "./synths.js"; useSound(synths)`.
+notation.js names no sound library. A sound is anything with some of `soundTime()`, `playNote(note, seconds)`, `makeSynth(name)` and `playNotes(text, step, { at })`: `useSound(sound)` hands one over, and `{ sound }` gives one page its own. In a pictures.js scene those are the scene's own sound functions: `useSound({ makeSynth, playNote, soundTime })`. On a page that imports synths.js: `import * as synths from "./synths.js"; useSound(synths)`.
 
 With a sound, `page.play()` is heard and a tapped note sounds. `{ voice: "bell" }` chooses the ready-made synth it plays on, and `{ synth: lead }` gives it a synth of yours. With no sound at all, `page.play()` moves the line in silence, which is still a metronome for the eyes.
 
-**Time is never kept by staves.js.** Where the music has got to is read every frame from what is followed: a song's `position`, or the sound library's clock. So the notes that light are the notes you hear, however busy your scene is.
+**Time is never kept by notation.js.** Where the music has got to is read every frame from what is followed: a song's `position`, or the sound library's clock. So the notes that light are the notes you hear, however busy your scene is.
 
 ## Playing along
 
@@ -212,7 +212,7 @@ A chord is right when all its notes have been played, in any order. `page.result
 
 ## How a tracker song becomes written music
 
-A tracker's grid is rows; written music is beats and bars. This is what staves.js does, and where it guesses.
+A tracker's grid is rows; written music is beats and bars. This is what notation.js does, and where it guesses.
 
 - **A row is a fixed written length.** Four rows are a beat (so a row is a sixteenth note) at a song speed of 6, eight at 3, two at 12. `rowsPerBeat` says otherwise. The tempo written is the tempo that results.
 - **A note lasts** until the next note on its channel, a note-off, a volume of nothing, or the end of its sample if the sample does not loop, and never more than two bars. A note let go a row before the beat is written to the beat, as a player would write it.
@@ -238,16 +238,16 @@ The parts that do this need no screen and are there to use: `write(readMusic("C4
 | OpenSheetMusicDisplay 2.2.1 | BSD-3-Clause | 1420 KB (360 KB) | takes MusicXML; built on VexFlow |
 | alphaTab 1.8.4 | MPL-2.0 | 1121 KB (279 KB) | its files would have to stay under their own licence |
 | Verovio 6.3.0 | LGPL-3.0-or-later | 7311 KB (2338 KB) | not a licence this library can carry |
-| **staves.js** | **MIT** | **124 KB (42 KB)** | the whole of it, symbols included |
+| **notation.js** | **MIT** | **124 KB (42 KB)** | the whole of it, symbols included |
 
 A full engraver knows lyrics, tuplets of every kind and beams across staves, none of which a first version here needs; what is needed here (tracker rows to rhythm, colour a note the moment it sounds, wait for a learner, the same from Python) none of them has. So this is a small renderer made for the job.
 
-**The symbols** (clefs, note heads, flags, rests, sharps and flats, the digits, the brace) are outlines from [Leland](https://github.com/MuseScoreFonts/Leland), MuseScore's music font, which is under the SIL Open Font Licence 1.1. Thirty-four of its glyphs are kept in staves.js as paths, 13 KB of the file, so no font is loaded and nothing waits for one. The licence lets a font be changed and put inside other software, and asks that what is taken stays under it and does not use the font's name: so those outlines remain under the OFL ([LICENSE-GLYPHS](LICENSE-GLYPHS)) while everything else is MIT. [scripts/make-glyphs.py](scripts/make-glyphs.py) takes them from the font file. (Bravura, the other candidate, is 889 KB as a font file and 323 KB as WOFF2; Leland's whole font is 89 KB.)
+**The symbols** (clefs, note heads, flags, rests, sharps and flats, the digits, the brace) are outlines from [Leland](https://github.com/MuseScoreFonts/Leland), MuseScore's music font, which is under the SIL Open Font Licence 1.1. Thirty-four of its glyphs are kept in notation.js as paths, 13 KB of the file, so no font is loaded and nothing waits for one. The licence lets a font be changed and put inside other software, and asks that what is taken stays under it and does not use the font's name: so those outlines remain under the OFL ([LICENSE-GLYPHS](LICENSE-GLYPHS)) while everything else is MIT. [scripts/make-glyphs.py](scripts/make-glyphs.py) takes them from the font file. (Bravura, the other candidate, is 889 KB as a font file and 323 KB as WOFF2; Leland's whole font is 89 KB.)
 
 ## Tests
 
 ```
-PLAYWRIGHT=/path/to/node_modules/playwright node scripts/test-staves.mjs
+PLAYWRIGHT=/path/to/node_modules/playwright node scripts/test-notation.mjs
 ```
 
 In node: reading tunes, note lengths and ties, beams, keys, clefs, tracker rows to rhythm (on songs made in the test and on Night Drive), and the layout's geometry at four widths (nothing overlaps, every note on its line, every stem the right way). In Chromium and WebKit, silently: there is ink where the layout puts each note at phone, split-view, tablet and desktop sizes; with the real synths.js playing, each note lights within a tenth of a second of the synth sounding it, and the lit bass note of a song is the one the song's own rows give, to within a row; a learner's notes are marked and counted; a dials.js keyboard plays the page; a MOD goes through `packSong`; every example runs as a pictures.js scene. `--node` runs the first part alone, and `--shots` saves pictures.

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * staves.js, tested. First the parts that need no screen, here in node: reading a tune, writing its lengths in
+ * notation.js, tested. First the parts that need no screen, here in node: reading a tune, writing its lengths in
  * bars, ties, beams, keys, clefs, a tracker's rows turned into rhythm, and the layout's geometry at four widths.
  * Then real browsers: what is drawn is where the layout says, the notes that light are the notes that are heard
  * (the real synths.js plays, muted), a learner's right and wrong notes are marked and counted, a dials.js keyboard
  * plays the page, and every example runs as a pictures.js scene.
  *
- *   PLAYWRIGHT=/path/to/node_modules/playwright node scripts/test-staves.mjs
+ *   PLAYWRIGHT=/path/to/node_modules/playwright node scripts/test-notation.mjs
  *
  * pictures.js, synths.js and dials.js are taken from the folders beside this repository. Chromium, and WebKit
  * when Playwright has it. NOTHING IS HEARD: Chromium is started muted, and in every page what a sound would be
@@ -22,7 +22,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const BESIDE = { pictures: resolve(process.env.PICTURES || join(ROOT, '..', 'pictures.js')), synths: resolve(process.env.SYNTHS || join(ROOT, '..', 'synths.js')), dials: resolve(process.env.DIALS || join(ROOT, '..', 'dials.js')) }
 const SHOTS = process.env.SHOTS || (process.argv.includes('--shots') ? join(ROOT, 'shots') : '')
-const lib = await import(pathToFileURL(join(ROOT, 'staves.js')).href)
+const lib = await import(pathToFileURL(join(ROOT, 'notation.js')).href)
 const { readMusic, readTune, readSong, unpackSong, write, writeLength, layout, guessKey, chooseClef, spell, keyOf, makeSheet } = lib
 
 let passed = 0, failed = 0
@@ -206,10 +206,10 @@ const SILENT = () => {
 }
 // In every page: the library, the pages of the whole window, and a few helpers.
 const HELPERS = async () => {
-  window.lib = await import('/staves.js')
+  window.lib = await import('/notation.js')
   window.frames = (n = 3) => new Promise((done) => { const go = () => (n-- > 0 ? requestAnimationFrame(go) : done()); go() })
   window.wait = (ms) => new Promise((done) => setTimeout(done, ms))
-  window.fresh = () => { document.getElementById('s').replaceChildren(); window.S = window.lib.staves(document.getElementById('s'), { fresh: true }); window.lib.useSound(null); return window.S }
+  window.fresh = () => { document.getElementById('s').replaceChildren(); window.S = window.lib.notation(document.getElementById('s'), { fresh: true }); window.lib.useSound(null); return window.S }
   // The colour of the canvas at a point of the page's music, as [r, g, b].
   window.inkAt = (page, x, y) => [...page.g.getImageData(Math.round((page.pad + x - page.scrollX) * page.ratio), Math.round((page.pad + y - page.scrollY) * page.ratio), 1, 1).data].slice(0, 3)
   window.headOf = (page, n) => { const hit = page.plan.hits[n], h = hit.item.heads[0]; return [h.x + hit.item.wide / 2, h.py] }
@@ -469,7 +469,7 @@ async function browserCases(name, browser) {
     canvas.style.cssText = 'position:absolute;left:0;top:0;width:900px;height:700px'
     canvas.tabIndex = 0
     host.append(canvas)
-    const S = lib.staves(canvas, { fresh: true })
+    const S = lib.notation(canvas, { fresh: true })
     const p = S.showNotes('C4 E4 G4', 'quarter', { playAlong: 'wait' })
     const piano = dials.dials(canvas, { fresh: true }).keyboard(p, { octave: 4, octaves: 1 })
     await frames(5)
@@ -515,7 +515,7 @@ async function browserCases(name, browser) {
     await frames()
     const shown = [p.score.staves[0].clef, p.plan.hits.length]
     p.remove()
-    return [before, grown, shown, S.all.length, document.querySelectorAll('[data-staves-layer]').length]
+    return [before, grown, shown, S.all.length, document.querySelectorAll('[data-notation-layer]').length]
   })
   check(name, 'a sheet that is added to is drawn again; a page can be given other music, and taken away', got, [1, [4, 2], ['bass', 2], 0, 0])
   check(name, 'no page left an error', errors, [])
@@ -524,8 +524,8 @@ async function browserCases(name, browser) {
 
 // Every example as a pictures.js scene: it runs, music is drawn over the scene, and (after a click) nothing has gone wrong.
 async function exampleCases(name, browser) {
-  const examples = (await readdir(join(ROOT, 'examples'))).filter((f) => f.endsWith('.js') && f !== 'staves.js').sort()
-  check(name, 'the copy of staves.js beside the examples is the library itself', readFileSync(join(ROOT, 'examples', 'staves.js'), 'utf8') === readFileSync(join(ROOT, 'staves.js'), 'utf8'), true)
+  const examples = (await readdir(join(ROOT, 'examples'))).filter((f) => f.endsWith('.js') && f !== 'notation.js').sort()
+  check(name, 'the copy of notation.js beside the examples is the library itself', readFileSync(join(ROOT, 'examples', 'notation.js'), 'utf8') === readFileSync(join(ROOT, 'notation.js'), 'utf8'), true)
   for (const [size, viewport] of Object.entries({ desktop: { width: 1000, height: 700 }, phone: { width: 390, height: 780 } })) {
     const context = await browser.newContext({ viewport })
     await context.addInitScript(SILENT)
@@ -548,7 +548,7 @@ async function exampleCases(name, browser) {
       await page.mouse.click(viewport.width / 2, viewport.height * 0.62)
       await page.waitForTimeout(1300)
       const got = await page.evaluate(() => {
-        const wrap = document.querySelector('div[data-staves-layer]'), canvas = wrap && wrap.querySelector('canvas')
+        const wrap = document.querySelector('div[data-notation-layer]'), canvas = wrap && wrap.querySelector('canvas')
         if (!canvas) return { layer: false }
         const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
         const seen = new Set()

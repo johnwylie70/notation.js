@@ -1,5 +1,5 @@
 node_modules/
-# written by scripts/test-staves.mjs --shots
+# written by scripts/test-notation.mjs --shots
 shots/
 *.tgz
 .DS_Store

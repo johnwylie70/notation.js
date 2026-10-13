@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The outlines of the music symbols staves.js draws, taken from a SMuFL font and written into staves.js.
+"""The outlines of the music symbols notation.js draws, taken from a SMuFL font and written into notation.js.
 
     python3 -m pip install fonttools
     python3 scripts/make-glyphs.py /path/to/Leland.otf /path/to/leland_metadata.json /path/to/glyphnames.json
@@ -8,7 +8,7 @@ Leland is MuseScore's font (https://github.com/MuseScoreFonts/Leland), under the
 Licence 1.1; glyphnames.json is SMuFL's (https://github.com/w3c/smufl, metadata/). Each outline is
 written as an SVG path in the font's own units (1000 to the em, so 250 to the gap between two staff
 lines), with y turned to run down the page as a canvas has it. What is written goes between the
-GLYPHS:BEGIN and GLYPHS:END lines of staves.js; nothing else is touched. The outlines stay under
+GLYPHS:BEGIN and GLYPHS:END lines of notation.js; nothing else is touched. The outlines stay under
 the font's licence: see LICENSE-GLYPHS.
 """
 import json
@@ -96,13 +96,13 @@ def main():
              "// The font's own thicknesses, in staff spaces.\nconst ENGRAVING = %s\n/* GLYPHS:END */") % (
         meta.get("fontName", "Leland"), meta.get("fontVersion", ""), "\n".join(lines),
         json.dumps(anchors).replace('"', ""), json.dumps(keep).replace('"', ""))
-    target = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "staves.js")
+    target = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "notation.js")
     if os.path.exists(target):
         text = open(target, encoding="utf-8").read()
         if "/* GLYPHS:BEGIN */" in text:
             text = re.sub(r"/\* GLYPHS:BEGIN \*/.*?/\* GLYPHS:END \*/", lambda m: block, text, flags=re.S)
             open(target, "w", encoding="utf-8").write(text)
-            print("staves.js: %d glyphs, %d bytes" % (len(NAMES), len(block)))
+            print("notation.js: %d glyphs, %d bytes" % (len(NAMES), len(block)))
             return
     print(block)
 

@@ -3,9 +3,9 @@
 // Try changing: "wait" to "time" (the line keeps going, at the tempo, after a bar counted in); the tune;
 // tempo: 80; hint: false (no lit key).
 //
-// Run it:   pictures run play_along.js     (staves.js sits beside this file)
+// Run it:   pictures run play_along.js     (notation.js sits beside this file)
 
-const { showNotes } = await use("staves.js")
+const { showNotes } = await use("notation.js")
 
 const lead = makeSynth("keys")
 const page = showNotes("E4 D4 C4 D4 E4 E4 E4:2 D4 D4 D4:2 E4 G4 G4:2", "quarter", { title: "Mary had a little lamb", tempo: 80 })
