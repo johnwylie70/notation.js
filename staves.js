@@ -454,7 +454,9 @@ function readSong(song, o = {}) {
         const chord = e.chord === undefined || e.chord === 'off' ? null : typeof e.chord === 'string' ? (chordKind(e.chord) || chordOffsets(e.chord)) : e.chord.map((c, i) => (typeof c === 'string' ? noteNumber(c) - (typeof note === 'number' ? note : 0) : c))
         if (note === 'off' || e.vol === 0 || (fx === 'C' && param === 0)) close(ch, total)
         else if ((typeof note === 'number' && !glide) || (chord && (note === null ? ch.open || typeof e.chord === 'string' : true))) {
-          const root = typeof note === 'number' ? note : ch.open ? ch.open.root : chordRoot(e.chord)
+          // A chord named with its root ("G7") and no note is on that root; a kind alone ("min") is on the note that is sounding.
+          const named = typeof e.chord === 'string' && !chordKind(e.chord) ? chordRoot(e.chord) : null
+          const root = typeof note === 'number' ? note : named !== null ? named : ch.open ? ch.open.root : null
           if (root === null) continue
           close(ch, total)
           const pitches = chord ? [...new Set(chord.map((c) => root + c))].sort((a, b) => a - b) : [root]
@@ -578,8 +580,8 @@ function chooseClef(notes) {
   if (!weight) return { clef: 'treble', octave: 0 }
   const mean = sum / weight
   if (low <= 47 && high >= 72 && below > weight * 0.15 && below < weight * 0.85) return { clef: 'grand', octave: 0 }
-  if (mean >= 58) return { clef: 'treble', octave: mean > 86 ? Math.round((mean - 71) / 12) : 0 }
-  return { clef: 'bass', octave: mean < 38 ? -Math.round((50 - mean) / 12) : 0 }
+  if (mean >= 58) return { clef: 'treble', octave: mean > 86 ? 1 : 0 }
+  return { clef: 'bass', octave: mean < 36 ? -1 : 0 }
 }
 
 /** The note lengths there are, in ticks: [how long, the plain length it is a dotted or plain form of]. Longest first. */
@@ -601,13 +603,15 @@ function writeLength(from, to, rest, bar, beat, compound) {
       const crosses = Math.floor((at + long - 1) / beat) > Math.floor(at / beat)
       // A length begins where its own kind of beat falls: a quarter note on a quarter, counted from the beat it is in.
       const within = at % beat
-      if (plain <= beat ? within % plain !== 0 : within !== 0) continue
+      // (A quarter note off the beat, between two eighths' worth of beat, is the one syncopation written as it is.)
+      const offbeat = !rest && !compound && long === beat && within === beat / 2 && at === from && at + long === to && !(half && at < half && at + long > half)
+      if (!offbeat && (plain <= beat ? within % plain !== 0 : within !== 0)) continue
       if (rest) {
         if (dotted ? !(compound && long % beat === 0 && at % long === 0) : (compound ? within : at) % long !== 0) continue
         if (crosses && (compound ? long % beat !== 0 : bar === 3 * beat)) continue
       } else {
         if (dotted && !(compound ? (long % beat === 0 ? within === 0 : within % (2 * plain) === 0) : at % (2 * plain) === 0 || (within === 0 && at + long === bar))) continue
-        if (crosses && (at % beat !== 0 || (compound && long % beat !== 0))) continue
+        if (crosses && !offbeat && (at % beat !== 0 || (compound && long % beat !== 0))) continue
         if (half && at < half && at + long > half && !(at === 0 || at + long === bar || (at === beat && long === 2 * beat))) continue
       }
       took = [at, long, dotted ? 1 : 0, false]
@@ -863,7 +867,7 @@ function layout(score, o = {}) {
       for (let i = 0; i < 30; i++) { k = (lo + hi) / 2; if (mine.reduce((w, bar) => w + stretched(bar, k), 0) > avail) hi = k; else lo = k }
     }
     let x = prefix(first)
-    const sys = { index: systems.length, first: b, last: to - 1, bars: mine, fixed: [], x0: x, x1: 0, times: [], staffY: [], y: 0, h: 0 }
+    const sys = { index: systems.length, first: b, last: to - 1, bars: mine, fixed: [], x0: x, x1: 0, times: [], staffY: [], y: 0, h: 0, stretch: k }
     for (const bar of mine) {
       bar.sys = sys
       bar.x = x
@@ -932,16 +936,16 @@ function layout(score, o = {}) {
           item.st = st
           const heads = item.heads, wide = item.wide
           const low = heads[0], high = heads[heads.length - 1]
+          // Short lines for notes above and below the staff, and the heads over them.
+          const from = x + Math.min(0, ...heads.map((h) => h.dx)) - 0.33 * S, to = x + wide + Math.max(0, ...heads.map((h) => h.dx)) + 0.33 * S
+          for (let pos = -2; pos >= low.pos; pos -= 2) line(list, sys, st, from, yOf(pos), to, yOf(pos), ENGRAVING.legerLineThickness * S, null)
+          for (let pos = 10; pos <= high.pos; pos += 2) line(list, sys, st, from, yOf(pos), to, yOf(pos), ENGRAVING.legerLineThickness * S, null)
           for (const h of heads) {
             h.x = x + h.dx
             h.y = yOf(h.pos)
             glyph(list, sys, st, item.glyph, h.x, h.y, e, { h: h.note })
             if (h.sign) glyph(list, sys, st, h.sign, x + h.signX, h.y, e, { h: h.note })
           }
-          // Short lines for notes above and below the staff.
-          const from = x + Math.min(0, ...heads.map((h) => h.dx)) - 0.33 * S, to = x + wide + Math.max(0, ...heads.map((h) => h.dx)) + 0.33 * S
-          for (let pos = -2; pos >= low.pos; pos -= 2) line(list, sys, st, from, yOf(pos), to, yOf(pos), ENGRAVING.legerLineThickness * S, null)
-          for (let pos = 10; pos <= high.pos; pos += 2) line(list, sys, st, from, yOf(pos), to, yOf(pos), ENGRAVING.legerLineThickness * S, null)
           if (item.dots) {
             const done = new Set()
             for (const h of heads) {
@@ -1107,6 +1111,9 @@ const NOW = 1, RIGHT = 2, WRONG = 3
 const paths = {}
 const pathOf = (name) => paths[name] || (paths[name] = new Path2D(GLYPHS[name][4]))
 
+/** The box a symbol's ink fills about its own point, in the font's units (250 to a staff space): [left, top, right, bottom]. */
+const glyphBox = (name) => GLYPHS[name].slice(0, 4)
+
 /** Paint shapes. `t` is the transform that takes the page's points to the canvas's pixels: [scale, x, y]. */
 function paint(g, prims, c, t) {
   const [k, ox, oy] = t
@@ -1218,6 +1225,7 @@ class Page {
     this.goX = this.goY = 0
     this.hand = 0 // until when a hand's scrolling is left alone
     this.tunes = []
+    this.voices = []
     this.playing = false
     this.along = null
     this.result = null
@@ -1264,8 +1272,11 @@ class Page {
     } catch (e) { this.wrap.remove(); throw e }
   }
   async fetch(file) {
-    const answer = await fetch(new URL(file, document.baseURI))
-    if (!answer.ok) throw new Error(`The song "${file}" could not be loaded (${answer.status}), so there is nothing to show`)
+    // A file is looked for where the host says, else beside the page, else beside this library (which a scene keeps beside itself).
+    const resolve = this.options.resolve || this.stage.resolve
+    let answer = await fetch(resolve ? resolve(file) : new URL(file, document.baseURI)).catch(() => null)
+    if ((!answer || !answer.ok) && !resolve) answer = await fetch(new URL(file, import.meta.url)).catch(() => answer)
+    if (!answer || !answer.ok) throw new Error(`The song "${file}" could not be loaded (${answer ? answer.status : 'no answer'}), so there is nothing to show`)
     const bytes = new Uint8Array(await answer.arrayBuffer())
     if (bytes[bytes.findIndex((b) => b > 32)] === 123) return readSong(JSON.parse(new TextDecoder().decode(bytes)), this.options)
     if (String.fromCharCode(...bytes.subarray(0, 4)) === 'SYSG') return readSong(unpackSong(bytes), this.options)
@@ -1404,6 +1415,11 @@ class Page {
   /** The time on the sound's clock, or the page's own when no sound was given. */
   clock() { const ask = method(this.sound, 'soundTime', 'sound_time'); return ask ? ask() : nowSeconds() }
   /**
+   * How long after the time it was asked for a note is heard: the sound library plays everything 0.04 seconds
+   * late, so that it can place it exactly. The line keeps to what is heard. A sound may say its own (`latency`).
+   */
+  get latency() { const sound = this.sound; return this.options.latency ?? (sound && typeof sound.latency === 'number' ? sound.latency : method(sound, 'soundTime', 'sound_time') ? 0.04 : 0) }
+  /**
    * Play the music through the sound that was given (useSound), and follow it: page.play(), page.play({ from: 8 })
    * to start eight beats in, { tempo: 90 } to play it slower, { repeat: true }. With no sound, the line moves in silence.
    */
@@ -1432,21 +1448,24 @@ class Page {
         at = e.end
       }
       if (!words.length) return
-      const synth = this.options.synth || (make && (i > 0 || this.options.voice) ? make(this.options.voice || 'keys') : null)
+      // Each staff plays on a synth of its own (made once, and kept), unless the page was given one; or on the sound's main synth.
+      const synth = this.options.synth || (make && (i > 0 || this.options.voice || !main) ? (this.voices[i] ||= make(this.options.voice || 'keys')) : null)
       const play = method(synth, 'playNotes', 'play_notes') || main
       if (play) this.tunes.push(play(words.join(' '), step / TICKS * 60 / bpm, { at: t0, hold: 0.94 }))
     })
     this.playing = true
     this.repeat = !!o.repeat
     this.playFrom = from
+    const late = this.latency
     this.source = () => {
-      const t = (this.clock() - t0) * bpm / 60 + from / TICKS
+      const t = (this.clock() - late - t0) * bpm / 60 + from / TICKS
       if (t * TICKS >= score.length) {
-        if (this.repeat) { this.play({ ...o, from: 0 }); return 0 }
+        if (this.repeat) { this.play({ ...o, from: 0 }); return null }
         this.finish()
         return null
       }
-      return Math.max(from / TICKS, t)
+      // (Nothing lights in the moment before the first note is heard.)
+      return t * TICKS < from ? null : t
     }
     return this
   }
@@ -1572,7 +1591,9 @@ class Page {
         if (!bar) continue
         const sys = bar.sys
         if (sys.y + sys.h < this.scrollY - pad || sys.y > this.scrollY + box.h) continue
-        const x1 = Math.max(pad * 0.4, bar.x - this.scrollX + pad - 0.5), x2 = Math.min(box.w - pad * 0.4, bar.x + bar.w - this.scrollX + pad + (n === this.score.bars - 1 ? pad : -0.5))
+        // (Between its bar lines: the one on its left belongs to the bar before, and neither changes colour.)
+        const edge = 0.1 * this.S
+        const x1 = Math.max(pad * 0.4, bar.x - this.scrollX + pad + edge), x2 = Math.min(box.w - pad * 0.4, bar.x + bar.w - this.scrollX + pad - edge)
         const y1 = Math.max(pad * 0.4, sys.y - this.scrollY + pad), y2 = Math.min(box.h - pad * 0.4, sys.y + sys.h - this.scrollY + pad)
         if (x2 <= x1 || y2 <= y1) continue
         g.save()
@@ -1752,7 +1773,8 @@ class Page {
       along.t0 = this.clock() + lead * 60 / bpm
       along.window = Math.max(0.3, 0.16 * bpm / 60) // how far from its moment a note may be played, in beats
       // A song that is being followed keeps the time; else the sound's clock does.
-      if (!this.source) this.source = () => (this.clock() - along.t0) * bpm / 60
+      const late = this.latency
+      if (!this.source) this.source = () => (this.clock() - late - along.t0) * bpm / 60
       along.mine = !this.following
       this.tick = 0
     }
@@ -1938,6 +1960,7 @@ function staves(host, options) {
     stage.api = api(stage)
   }
   if (options && options.sound !== undefined) stage.sound = options.sound
+  if (options && options.resolve !== undefined) stage.resolve = options.resolve
   return stage.api
 }
 function onlyCanvas() {
@@ -1966,5 +1989,5 @@ export {
   staves, showNotes, makeSheet, useSound, theme, version,
   showNotes as show_notes, makeSheet as make_sheet, useSound as use_sound,
   // The parts that need no screen, for a program that wants the written music itself (and for the tests).
-  readMusic, readTune, readSong, unpackSong, write, writeLength, layout, guessKey, chooseClef, spell, keyOf, timeOf, noteNumber, noteName, lengthBeats, Sheet,
+  readMusic, readTune, readSong, unpackSong, write, writeLength, layout, guessKey, chooseClef, spell, keyOf, timeOf, noteNumber, noteName, lengthBeats, glyphBox, Sheet,
 }
