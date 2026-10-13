@@ -109,6 +109,20 @@ const nightScore = write(night)
 check('node', 'Night Drive: four staves (chords, bass, drums, tune), eight bars at 125, in A minor with no sharps or flats', [night.tempo, night.parts.map((p) => [p.name, p.channel, p.percussion]), nightScore.bars, nightScore.key, nightScore.staves.map((s) => s.clef)], [125, [['chords', 0, false], ['bass', 1, false], ['drums', 2, true], ['tune', 3, false]], 8, 0, ['treble', 'bass', 'percussion', 'treble']])
 check('node', 'Night Drive: the bass is a dotted quarter, an eighth tied to a quarter, and a quarter; the chord is a whole note tied to the next bar', [said(nightScore.staves[1]).split(' | ')[0], said(nightScore.staves[0]).split(' | ').slice(0, 2), nightScore.staves[0].events[0].arp], ['A2:12 A2:4~ A2:8 A3:8', ['A4+C5+E5:32~', 'A4+C5+E5:32'], true])
 check('node', 'Night Drive: a place in the song is a beat and back', [night.song.beat({ order: 0, row: 0 }), night.song.beat({ order: 2, row: 16, tick: 3, speed: 6 }), night.song.place(20), night.song.rowsPerBeat], [0, 20.125, { order: 2, row: 16 }, 4])
+check('node', 'Night Drive, every moment of it, on every staff: what would be lit is one note, or one chord, or the tied heads of one note, never two notes at once', (() => {
+  const two = []
+  for (const score of [nightScore, write(readSong(drive, { grand: true })), write(readSong(drive, { channels: [3, 1] }))]) for (const staff of score.staves) {
+    for (let tick = 0; tick < score.length; tick++) {
+      const lit = staff.events.filter((e) => e.start <= tick && tick < e.end)
+      if (lit.length > 1) two.push([staff.name, tick])
+      // The heads lit are all of that one note: a head for each note of a chord, in each of its tied pieces.
+      if (lit.length === 1 && !lit[0].items.every((item) => item.event === lit[0] && item.heads.length === lit[0].notes.length)) two.push([staff.name, tick, 'heads'])
+    }
+    // Pieces of one note are joined by ties, every one but the last.
+    for (const e of staff.events) if (!e.items.every((item, i) => item.tie === (i < e.items.length - 1) && item.tied === (i > 0))) two.push([staff.name, e.start, 'ties'])
+  }
+  return two
+})(), [])
 check('node', 'Night Drive on a grand staff: the tuned channels together on two joined staves, and the drums below', write(readSong(drive, { grand: true })).staves.map((s) => [s.clef, s.brace]), [['treble', 1], ['bass', 2], ['percussion', 0]])
 
 // The packed form of a song, built here by the document: two notes and a chord.
@@ -379,6 +393,7 @@ async function browserCases(name, browser) {
     const expect = (row) => { let found = null; for (const [r, note] of bass) if (r <= row) found = note; return found }
     const edge = (row) => Math.min(...bass.map(([r]) => Math.abs(r - row)))
     const samples = []
+    let most = 0
     const start = performance.now()
     while (performance.now() - start < 3500) {
       await frames(1)
@@ -387,9 +402,10 @@ async function browserCases(name, browser) {
       const row = pos.order * 32 + pos.row + pos.tick / pos.speed
       const lit = p.active.filter((e) => e.staff === 0).map((e) => e.sounds[0])
       samples.push({ row, beat: p.beat, lit: lit.length ? lib.noteName(lit[0]).replace(/^([A-G])(\d)/, '$1-$2') : null, want: expect(row), edge: edge(row) })
+      most = Math.max(most, ...p.score.staves.map((staff, i) => p.active.filter((e) => e.staff === i).length))
     }
     const wrong = samples.filter((s) => s.lit !== s.want && s.want !== 'off')
-    const out = { n: samples.length, rows: samples.length ? samples[samples.length - 1].row - samples[0].row : 0, worst: Math.max(0, ...wrong.map((s) => s.edge)), off: Math.max(0, ...samples.map((s) => Math.abs(s.beat - s.row / 4))), staves: p.score.staves.map((s) => s.name) }
+    const out = { most, n: samples.length, rows: samples.length ? samples[samples.length - 1].row - samples[0].row : 0, worst: Math.max(0, ...wrong.map((s) => s.edge)), off: Math.max(0, ...samples.map((s) => Math.abs(s.beat - s.row / 4))), staves: p.score.staves.map((s) => s.name) }
     // Tap the sixth bar: the song is sent there.
     const bar = p.plan.bars[5], r = p.wrap.getBoundingClientRect()
     out.tap = [r.left + p.pad + bar.x + bar.w - 6 - p.scrollX, r.top + p.pad + bar.sys.staffY[0] + 2 * p.S - p.scrollY]
@@ -397,6 +413,7 @@ async function browserCases(name, browser) {
     return out
   })
   check(name, `a song that plays: the bass note that is lit is the one the song's own rows say is sounding, to within a row of a change (worst ${got.worst.toFixed(2)} rows over ${got.n} frames and ${Math.round(got.rows)} rows), and the line is never more than a sixteenth note from the song's place`, [got.n > 60, got.rows > 16, got.worst <= 1, got.off < 0.3, got.staves], [true, true, true, true, ['bass', 'tune']])
+  check(name, 'a song that plays: in every frame each staff has at most one note lit (a chord, or the tied heads of one held note, is one note)', got.most, 1)
   await page.mouse.click(got.tap[0], got.tap[1])
   await page.waitForTimeout(500)
   got = await run(page, () => { const pos = window.song.position; window.song.stop(); return [pos.order, pos.row >= 16 && pos.row < 30, window.p.bar] })
