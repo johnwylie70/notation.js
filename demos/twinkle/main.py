@@ -2,7 +2,6 @@
 # The same file runs in a web browser with Pyctures, the free library:
 # https://github.com/johnwylie70/pyctures
 # pyctures: autorun
-# The sheet music is pynotation, which goes with Pyctures and brings its sound library, synths, with it.
 
 # Twinkle: a tune written as code, one line a note, shown as sheet music. Each note lights as it sounds, and a star goes up for it.
 # Use: click or tap below the music to play the tune, and again to stop it. Tap a note to hear it.
@@ -10,7 +9,7 @@
 import random
 
 from pyctures import *
-from pynotation import *
+from pynotation import *      # sheet music; it brings the sound library, synths, with it
 
 sheet = make_sheet(title="Twinkle, twinkle, little star", tempo=100, key="C")
 for name in ["C4", "C4", "G4", "G4", "A4", "A4"]:

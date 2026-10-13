@@ -1,12 +1,12 @@
 // This demo shows JavaScript drawing graphics in Circuitry Studio.
 // The same file runs in a web browser with pictures.js, the free library:
 // https://www.circuitry.dev/pictures
-// The sheet music is notation.js, which goes with pictures.js, as its sound library, synths.js, does.
 
 // Twinkle: a tune written as code, one line a note, shown as sheet music. Each note lights as it sounds, and a star goes up for it.
 // Use: click or tap below the music to play the tune, and again to stop it. Tap a note to hear it.
 // Try changing: the notes; "quarter" to "eighth"; tempo: 100 to 160; "bell" to "keys" or "lead"; key: "C" to "G" (and the notes to match).
 
+// makeSheet and showNotes are sheet music (notation.js, which comes with pictures.js as its sound does).
 const sheet = makeSheet({ title: "Twinkle, twinkle, little star", tempo: 100, key: "C" })
 for (const name of ["C4", "C4", "G4", "G4", "A4", "A4"]) sheet.add(name, "quarter")
 sheet.add("G4", "half")
