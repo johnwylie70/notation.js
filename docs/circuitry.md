@@ -108,7 +108,7 @@ A page is never the size of the scene (it is a sheet of paper over part of it), 
 
 ## The demo
 
-`sheet-music/` (handed to the team lead, not copied anywhere) is in the shape of `public/demos/*`: `main.py` (the entry), `main.js` (its twin, the same program), `thumbnail.jpg` at 600 × 600, and `index-entry.json` for `public/demos/index.json`. It imports `pyctures`, `synths`, `pydials` and `pynotation`, so it runs once step 3 above is done.
+`demos/sheet-music/` here is in the shape of `public/demos/*`: `main.py` (the entry), `main.js` (its twin, the same program line for line), and `thumbnail.jpg` at 600 × 600; `demos/index.json` has its entry in the form of `public/demos/index.json` (`tags: ["learn"]`). It has not been copied anywhere: the catalogue's test pins the list of learn demos. The Python file imports `pyctures`, `synths`, `pydials` and `pynotation`, so it runs in the app once step 3 above is done; the JavaScript one once steps 1 and 2 are.
 
 ## Words for the help pages
 

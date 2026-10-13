@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "demos": [
+    {
+      "id": "sheet-music",
+      "title": "Sheet Music",
+      "summary": "A tune is one line of notes. It is written out as sheet music and each note lights up as it plays. Change the notes and both the music and the page change. About 20 lines of Python.",
+      "kind": "html",
+      "entry": "main.py",
+      "files": [
+        "main.py"
+      ],
+      "thumbnail": "thumbnail.jpg",
+      "version": 2026101301,
+      "tags": [
+        "learn"
+      ]
+    }
+  ]
+}
