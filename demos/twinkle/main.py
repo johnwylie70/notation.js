@@ -1,7 +1,8 @@
-# This demo shows a tune written as code, shown as sheet music and played, in Circuitry Studio.
-# The same file runs in a web browser with Pyctures and its sheet music library, the free libraries:
+# This demo shows Python drawing graphics in Circuitry Studio.
+# The same file runs in a web browser with Pyctures, the free library:
 # https://github.com/johnwylie70/pyctures
 # pyctures: autorun
+# The sheet music is pynotation, which goes with Pyctures and brings its sound library, synths, with it.
 
 # Twinkle: a tune written as code, one line a note, shown as sheet music. Each note lights as it sounds, and a star goes up for it.
 # Use: click or tap below the music to play the tune, and again to stop it. Tap a note to hear it.
