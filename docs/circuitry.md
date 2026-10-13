@@ -72,10 +72,10 @@ If the app's page plays sound through a host of its own (`host.send`), `state()`
 
 ## How its recorder works, and what that means here
 
-**A JavaScript scene (pictures.js)**: the frame is every visible canvas copied where it sits. A page of music is a `div[data-notation-layer]` holding two canvases: the music, and the line that moves (`canvas[data-notation-layer="line"]`, one pixel stretched by CSS to 3 pixels wide and the height of the line of music, moved with a CSS transform). Both are canvases so that they are in the film. Two things to check in `visibleCanvases` / `drawCanvases`:
+**A JavaScript scene (pictures.js)**: the frame is every visible canvas copied where it sits. A page of music is a `div[data-notation-layer]` holding two canvases: the music, and the line that moves (`canvas[data-notation-layer="line"]`, one pixel stretched by CSS to 3 pixels wide and the height of the line of music, placed by its `left` and `top`, with no CSS transform, since the recorder takes no notice of transforms). Both are canvases so that they are in the film. Two things to check in `visibleCanvases` / `drawCanvases`:
 
 - They must be found though they are inside a `div`, not straight after the scene's canvas (a query for every `canvas` under the scene's box finds them; one that walks only the canvas's siblings does not).
-- Each must be drawn at its own box (`getBoundingClientRect()`), which for the line includes its transform and its stretched size. A copy that uses `canvas.width` and `canvas.height`, or `offsetLeft` and `offsetTop`, puts the line in the wrong place.
+- Each must be drawn at its own box (`getBoundingClientRect()`), which for the line is its stretched size, not its one pixel. (record-sync says the recorder does this: every visible canvas in the document, in DOM order, each at its bounding rect.)
 
 The pages draw from their own `requestAnimationFrame`, so under the stepped clock they are drawn in each step, after the scene's own frame. Which note is lit is read in that same callback from the sound's clock (`soundTime()`, less the player's latency) or from the song's place, so with the stepped player the note lit in a frame is the note sounding in that frame.
 

@@ -340,7 +340,7 @@ async function browserCases(name, browser) {
     const start = performance.now()
     while (!done && performance.now() - start < 6000) {
       await frames(1)
-      samples.push({ t: synths.soundTime(), lit: p.sounding, heard: [...lead.notes()], x: p.cursor.style.transform, colour: p.active.length && p.active[0].items[0].plain < 16 ? inkAt(p, ...headOf(p, p.plan.hits.findIndex((h) => h.item.event === p.active[0]))) : null })
+      samples.push({ t: synths.soundTime(), lit: p.sounding, heard: [...lead.notes()], x: p.cursor.style.left, colour: p.active.length && p.active[0].items[0].plain < 16 ? inkAt(p, ...headOf(p, p.plan.hits.findIndex((h) => h.item.event === p.active[0]))) : null })
     }
     await frames()
     const first = began[0] ? began[0][1] : 0
@@ -349,7 +349,7 @@ async function browserCases(name, browser) {
     const firstLit = {}, firstHeard = {}
     for (const s of samples) { for (const n of s.lit) firstLit[n] ??= s.t; for (const n of s.heard) firstHeard[n] ??= s.t }
     const late = [60, 64, 67, 72, 76].map((n) => (firstHeard[n] === undefined || firstLit[n] === undefined ? 9 : Math.abs(firstHeard[n] - firstLit[n])))
-    const xs = samples.map((s) => +(/translate\(([-\d.]+)px/.exec(s.x) || [0, -1])[1]).filter((x) => x >= 0)
+    const xs = samples.map((s) => (s.x ? parseFloat(s.x) : -1)).filter((x) => x >= 0)
     if (window.DEBUG) console.log(JSON.stringify({ began, first: samples.slice(0, 40).map((s) => [Math.round(s.t * 1000), s.lit.join(), s.heard.join()]) }))
     return {
       names: began.map((b) => b[0]), gaps: began.slice(1).map((b, i) => Math.round((b[1] - began[i][1]) / 0.3 * 100) / 100 - (b[2] - began[i][2])),
