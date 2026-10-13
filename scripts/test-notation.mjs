@@ -92,6 +92,11 @@ check('node', 'a note let go a row before the next beat is written to the beat; 
 check('node', 'a speed of 3 makes eight rows a beat, and the tempo written is the tempo heard', tracked([{ row: 0, ch: 0, note: 'C-4', ins: 1 }, { row: 8, ch: 0, note: 'E-4', ins: 1 }], { speed: 3 }), [125, 'treble C4:8 E4:8 r:16'])
 check('node', 'an effect F changes the speed without changing how a row is written', readSong(song([{ row: 0, ch: 0, note: 'C-4', ins: 1, fx: 'F03' }, { row: 4, ch: 0, note: 'D-4', ins: 1 }])).parts[0].notes.map((n) => [n.start, n.length]), [[0, 1], [1, 3]])
 check('node', 'a chord on a note is written as the chord, with a wavy line, not as many small notes', (() => { const music = readSong(song([{ row: 0, ch: 0, note: 'A-4', ins: 1, chord: 'min' }, { row: 8, ch: 0, note: 'F-4', ins: 1, chord: [0, 4, 7, 12] }, { row: 12, ch: 0, ins: 1, chord: 'G7' }])); return music.parts[0].notes.map((n) => [n.start, n.notes, n.arp]) })(), [[0, [69, 72, 76], true], [2, [65, 69, 72, 77], true], [3, [67, 71, 74, 77], true]])
+const two = (events) => readSong(song(events, { version: 2 })).parts[0].notes.map((n) => [n.start, n.notes, n.arp])
+check('node', 'in a version 2 song a chord is notes together and an arp the notes one at a time: both are written as the chord, the arp with a wavy line', two([{ row: 0, ch: 0, note: 'C-4', ins: 1, chord: 'm7' }, { row: 4, ch: 0, note: 'C-4', ins: 1, arp: { chord: 'maj', rate: '1/16', octaves: 2 } }, { row: 8, ch: 0, arp: { chord: [-4, 0, 3, 8], rate: '1/16' } }, { row: 12, ch: 0, note: 'A-3', ins: 1, arp: { chord: 'min', order: 'together' } }]),
+  [[0, [60, 63, 67, 70], false], [1, [60, 64, 67], true], [2, [56, 60, 63, 68], true], [3, [57, 60, 64], false]])
+check('node', 'in a version 2 song a chord beside one of the old keys is still the fast arpeggio, and "off" ends one without a new note', two([{ row: 0, ch: 0, note: 'C-4', ins: 1, chord: 'maj', chordHz: 50 }, { row: 4, ch: 0, arp: 'off' }, { row: 8, ch: 0, note: 'D-4', ins: 1 }]), [[0, [60, 64, 67], true], [2, [62], false]])
+check('node', 'a note that is glided to is not a new note, and a bend, a slide and a vibrato are not written', two([{ row: 0, ch: 0, note: 'A-4', ins: 1, bend: 'scoop' }, { row: 4, ch: 0, note: 'C-5', ins: 1, glide: '1/16' }, { row: 6, ch: 0, bend: 'fall' }, { row: 8, ch: 0, note: 'E-5', ins: 1, vibrato: true }, { row: 12, ch: 0, note: 'G-5', ins: 1, glide: true }, { row: 14, ch: 0, slide: 12 }]).map((n) => [n[0], n[1][0]]), [[0, 69], [2, 76]])
 check('node', 'drums are known by their names and written on a percussion staff, each drum in its own place, as short hits', tracked([{ row: 0, ch: 1, note: 'C-3', ins: 2 }, { row: 4, ch: 1, note: 'A-3', ins: 3 }, { row: 6, ch: 1, note: 'A-3', ins: 3 }, { row: 8, ch: 1, note: 'C-3', ins: 2 }]), [125, 'drums F4:8 C5:4b C5:4b F4:8 r:8'])
 check('node', 'which instruments are drums can be told, and so can which channels and instruments to show', [tracked([{ row: 0, ch: 0, note: 'C-4', ins: 1 }, { row: 0, ch: 1, note: 'C-3', ins: 2 }], {}, { drums: ['lead'] })[1].slice(0, 5), tracked([{ row: 0, ch: 0, note: 'C-4', ins: 1 }, { row: 0, ch: 1, note: 'C-3', ins: 2 }], {}, { channels: [0] }).length, tracked([{ row: 0, ch: 0, note: 'C-4', ins: 1 }, { row: 4, ch: 0, note: 'C-5', ins: 4 }], {}, { instruments: ['lead'] })[1]], ['drums', 2, 'treble C4:8 r:8 r:16'])
 check('node', 'a sample that does not loop is as long as it sounds, not as long as the gap after it', tracked([{ row: 0, ch: 0, note: 'C-4', ins: 4 }, { row: 8, ch: 0, note: 'C-4', ins: 4 }]), [125, 'treble C4:4 r:4 r:8 C4:4 r:4 r:8'])
@@ -122,6 +127,25 @@ function packed() {
   return new Uint8Array(b)
 }
 check('node', 'the packed form of a song (what packSong makes of a MOD or XM) is read as the JSON is', (() => { const music = readMusic(packed()); return [music.title, music.parts[0].name, music.parts[0].notes.map((n) => [n.start, n.length, n.notes])] })(), ['Packed', 'lead', [[0, 1, [60]], [1, 1, [64, 67, 71]]]])
+function packed2() {
+  const b = []
+  const u8 = (n) => b.push(n & 255), u16 = (n) => { u8(n); u8(n >> 8) }, u32 = (n) => { u16(n); u16(n >> 16) }
+  const text = (s) => { u16(s.length); for (const c of s) u8(c.charCodeAt(0)) }
+  const full = (arp, offsets, order = 0) => { u8(offsets.length); u8(arp); u8(order); for (let i = 0; i < 21; i++) u8(0); for (let i = 0; i < 8; i++) u8(offsets[i] || 0) }
+  for (const c of 'SYSG') u8(c.charCodeAt(0))
+  u16(2); u16(0); u8(6); u8(125); u16(0); u16(1); u16(1); u16(1); u16(1); u16(0)
+  text('Two'); u8(128); u16(0)
+  u16(16); u32(4)
+  u16(0); u8(0); u8(2); u8(49); u8(1); u8(0); u8(0); u8(0); full(0, [0, 4, 7])                 // a chord, together
+  u16(4); u8(0); u8(2); u8(49); u8(1); u8(0); u8(0); u8(0); full(1, [0, 3, 7])                 // an arpeggio
+  u16(8); u8(0); u8(4); u8(53); u8(1); u8(0); u8(0); u8(0); u16(1)                             // a note glided to: extra 1
+  u16(12); u8(0); u8(4); u8(56); u8(1); u8(0); u8(0); u8(0); u16(2)                            // a note with a bend: extra 2
+  text('lead'); text('lead'); u8(0); for (let e = 0; e < 2; e++) { u8(0); u8(0); u8(0); u8(0); u8(0) } u32(0); u16(0)
+  for (const c of 'XTRA') u8(c.charCodeAt(0))
+  u16(2); u8(1); for (let i = 0; i < 8; i++) u8(0); u8(2); for (let i = 0; i < 16; i++) u8(0)
+  return new Uint8Array(b)
+}
+check('node', 'the packed form of a version 2 song: a chord in full, an arpeggio in full, and a glide kept among the extras', readMusic(packed2()).parts[0].notes.map((n) => [n.start, n.notes, n.arp]), [[0, [60, 64, 67], false], [1, [60, 63, 67], true], [3, [67], false]])
 check('node', 'bytes that are a MOD or XM as they came say what to do', /packSong/.test(throws(() => unpackSong(new Uint8Array(2000)))), true)
 
 // --- the layout: real geometry, at the widths of a phone, a split view, a tablet and a desktop
@@ -394,6 +418,29 @@ async function browserCases(name, browser) {
   await page.mouse.click(got[2], got[3])
   check(name, 'a tap on a note of a chord plays that note and tells onTap; a tap elsewhere in a bar says which bar', await run(page, () => window.out), { heard: [67], tapped: ['G4', 'bar 1'] })
 
+  // --- the sound is not on yet: the page waits for it, and does not go by the clock alone
+  got = await run(page, async () => {
+    const S = fresh()
+    const sound = { state: 'waiting', played: [], soundTime: () => performance.now() / 1000, latency: 0, playNotes(text, step, o) { this.played.push(text); return { stop() {} } } }
+    const p = S.showNotes('C4 E4 G4 C5', 'quarter', { tempo: 240, sound })
+    await frames()
+    p.play()
+    await wait(400)
+    const before = [p.playing, sound.played.length, p.sounding, p.cursor.style.display]
+    sound.state = 'on'
+    await wait(250)
+    const after = [p.playing, sound.played, p.sounding.length > 0]
+    p.stop()
+    sound.state = 'loading'
+    p.playAlong({ mode: 'time', countIn: 0 })
+    await wait(300)
+    const held = [p.beat, p.along.groups.length]
+    sound.state = 'on'
+    await wait(300)
+    return { before, after, held, going: p.beat > 0.3 }
+  })
+  check(name, 'while the sound is not on (the page has not been touched, or the engine is loading) nothing is played and nothing lights, though the sound clock runs; the moment it is on, the tune begins; keeping time for a learner waits the same way', got, { before: [true, 0, [], 'none'], after: [true, ['C4:4 E4:4 G4:4 C5:4'], true], held: [0, 0], going: true })
+
   // --- playing along: the page waits
   got = await run(page, async () => {
     const S = fresh()
@@ -554,7 +601,7 @@ async function exampleCases(name, browser) {
         const seen = new Set()
         for (let i = 0; i < data.length; i += 4 * 97) seen.add(data[i] >> 5 << 6 | data[i + 1] >> 5 << 3 | data[i + 2] >> 5)
         const box = wrap.getBoundingClientRect()
-        return { layer: true, colours: seen.size, inside: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight, line: wrap.querySelector('div').style.display }
+        return { layer: true, colours: seen.size, inside: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight, line: wrap.querySelectorAll('canvas')[1].style.display }
       })
       check(name, `the example ${file} on a ${size}: it runs as a pictures.js scene with its music drawn inside the picture${file === 'play_along.js' ? '' : ', and after a click the line is moving'}`, [began, got.layer, got.colours > 2, got.inside, file === 'play_along.js' ? 'block' : got.line], [{ ok: true }, true, true, true, 'block'])
       if (SHOTS && name === 'chromium') await page.screenshot({ path: join(SHOTS, `example-${file.replace('.js', '')}-${size}.png`) })
