@@ -107,7 +107,7 @@ A page is never the size of the scene (it is a sheet of paper over part of it), 
 
 - `notation/notation.js` is 130 KB (44 KB gzipped), 13 KB of it the symbols' outlines. `pynotation.py` is 20 KB.
 - pictures.js itself grew by 2 KB; a scene that shows no music asks for nothing new.
-- A Pyctures single-file page with no sheet music is 195,989 characters on the `notation` branch, where main is 194,057: 1.9 KB more (the two things asked of the sound, the handle, and the stand-in for a library). Pyctures' scenes test held such a page under 195,000, which main is 943 short of and the effects' branch 14 short of; the `notation` branch raises that line to the stated limit, 200,000. The three branches together will be near 197 KB.
+- A Pyctures single-file page with no sheet music is 195,334 characters on the `notation` branch, where the main it was cut from is 193,990: 1.3 KB more (the two things asked of the sound, the handle, and the stand-in for a library, which the dials now share). Pyctures' scenes test held such a page under 195,000, which the effects' branch is 14 short of; the `notation` branch raises that line to the one limit for the project, 200,000.
 
 ## The demo
 
@@ -128,6 +128,7 @@ The app's help already has a Sheet Music section (`src/app/docs/notation/`) that
 
 ```js
 const page = showNotes("E4 D4 C4 D4 E4 E4 E4:2", "quarter", { title: "Mary had a little lamb" })
+layout({ at: "bottom" })        // the button goes at the bottom, clear of the music at the top
 button("play", () => (page.playing ? page.stop() : page.play()))
 
 function draw() {
@@ -143,6 +144,7 @@ from pydials import *
 from pynotation import *
 
 page = show_notes("E4 D4 C4 D4 E4 E4 E4:2", "quarter", title="Mary had a little lamb")
+layout(at="bottom")        # the button goes at the bottom, clear of the music at the top
 button("play", lambda: page.stop() if page.playing else page.play())
 
 def draw():

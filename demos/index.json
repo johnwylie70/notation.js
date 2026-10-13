@@ -8,7 +8,8 @@
       "kind": "html",
       "entry": "main.py",
       "files": [
-        "main.py"
+        "main.py",
+        "main.js"
       ],
       "thumbnail": "thumbnail.jpg",
       "version": 2026101301,
