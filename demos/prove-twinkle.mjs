@@ -1,15 +1,23 @@
-// Twinkle in Python (demos/twinkle/main.py), run by `pyctures run` from the worktree ../pyctures-notation, in Chromium and WebKit, silently:
-//   node demos/prove-twinkle.mjs demos/twinkle/main.py /a/folder/for/pictures      (W and H set the window)
+// Twinkle in Python (demos/twinkle/main.py), run by `pyctures run`, in Chromium and WebKit, silently:
 // is the sound truly on, is the music drawn, does each note light as it sounds?
+//
+//   PLAYWRIGHT=/path/to/node_modules/playwright node demos/prove-twinkle.mjs demos/twinkle/main.py /a/folder/for/pictures
+//
+// Pyctures is taken from the folder beside this repository (or PYCTURES=/path/to/pyctures), and run with its own
+// .venv's Python when it has one (or PYTHON=/path/to/python). W and H set the window.
 import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
-import { pathToFileURL } from 'node:url'
-import { join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
 const [DEMO, OUT] = process.argv.slice(2)
-const ROOT = '/Users/johnwylie/Dev/Victorum/Circuitry'
-const pw = await import(pathToFileURL(`${ROOT}/circuitry/node_modules/playwright/index.mjs`).href)
+const BESIDE = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const PYCTURES = resolve(process.env.PYCTURES || join(BESIDE, 'pyctures'))
+const PYTHON = process.env.PYTHON || (existsSync(join(PYCTURES, '.venv', 'bin', 'python')) ? join(PYCTURES, '.venv', 'bin', 'python') : 'python3')
+const from = process.env.PLAYWRIGHT || 'playwright'
+const pw = await import(from.startsWith('/') ? pathToFileURL(join(from, 'index.mjs')).href : from)
 const port = await new Promise((done) => { const s = createServer(); s.listen(0, () => { const p = s.address().port; s.close(() => done(p)) }) })
-const server = spawn(`${ROOT}/pyctures/.venv/bin/python`, ['-m', 'pyctures', 'run', DEMO, '--no-browser', '--port', String(port)], { env: { ...process.env, PYTHONPATH: `${ROOT}/pyctures-notation/src` }, stdio: 'ignore' })
+const server = spawn(PYTHON, ['-m', 'pyctures', 'run', resolve(DEMO), '--no-browser', '--port', String(port)], { env: { ...process.env, PYTHONPATH: join(PYCTURES, 'src') }, stdio: 'ignore' })
 await new Promise((r) => setTimeout(r, 1500))
 const QUIET = `(() => { if (typeof AudioNode === 'undefined' || typeof AudioDestinationNode === 'undefined') return
   const connect = AudioNode.prototype.connect, silent = new WeakMap()
