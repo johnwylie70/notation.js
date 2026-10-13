@@ -441,6 +441,13 @@ async function browserCases(name, browser) {
   })
   check(name, 'while the sound is not on (the page has not been touched, or the engine is loading) nothing is played and nothing lights, though the sound clock runs; the moment it is on, the tune begins; keeping time for a learner waits the same way', got, { before: [true, 0, [], 'none'], after: [true, ['C4:4 E4:4 G4:4 C5:4'], true], held: [0, 0], going: true })
 
+  got = await run(page, async () => {
+    const S = fresh()
+    const of = (sound) => S.showNotes('C4', { sound }).latency
+    return [of(null), of({ soundTime: () => 0 }), of({ soundTime: () => 0, player: { state: 'on', buffer: () => ({ delay: 0, thread: 'stepped' }) } }), of({ soundTime: () => 0, player: { state: 'on', buffer: () => ({ delay: 25 }) } }), of({ soundTime: () => 0, latency: 0.1 }), S.showNotes('C4', { latency: 0.2 }).latency]
+  })
+  check(name, 'a note lights as long after its time as the player says it plays late: 0.04 s unless it says, and nothing at all for a player a video recorder steps, so in a film the note lit is the note sounding', got, [0, 0.04, 0, 0.025, 0.1, 0.2])
+
   // --- playing along: the page waits
   got = await run(page, async () => {
     const S = fresh()

@@ -86,7 +86,7 @@ The line waits at each note until you play it. The key to press is lit. A right 
 
 ## Run it
 
-Put `notation.js` beside your scene and run the scene with pictures.js:
+A pictures.js that has sheet music built in (its `notation` folder) gives every scene `showNotes` and `makeSheet` with nothing to import, and its own sound: the first line of the scenes above, and `useSound`, are then not wanted. With one that has not, put `notation.js` beside your scene and run the scene with pictures.js:
 
 ```
 npx pictures run twinkle.js
@@ -238,7 +238,7 @@ The parts that do this need no screen and are there to use: `write(readMusic("C4
 | OpenSheetMusicDisplay 2.2.1 | BSD-3-Clause | 1420 KB (360 KB) | takes MusicXML; built on VexFlow |
 | alphaTab 1.8.4 | MPL-2.0 | 1121 KB (279 KB) | its files would have to stay under their own licence |
 | Verovio 6.3.0 | LGPL-3.0-or-later | 7311 KB (2338 KB) | not a licence this library can carry |
-| **notation.js** | **MIT** | **124 KB (42 KB)** | the whole of it, symbols included |
+| **notation.js** | **MIT** | **130 KB (44 KB)** | the whole of it, symbols included |
 
 A full engraver knows lyrics, tuplets of every kind and beams across staves, none of which a first version here needs; what is needed here (tracker rows to rhythm, colour a note the moment it sounds, wait for a learner, the same from Python) none of them has. So this is a small renderer made for the job.
 
