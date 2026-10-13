@@ -1,0 +1,14 @@
+{
+  "name": "staves.js",
+  "version": "0.0.0",
+  "description": "Music written as notes on a staff, in plain JavaScript: a tune, a tracker song or plain data is drawn as sheet music that lights up as it plays, and a learner can play along. A sibling of pictures.js, synths.js and dials.js.",
+  "type": "module",
+  "main": "./staves.js",
+  "module": "./staves.js",
+  "exports": { ".": "./staves.js", "./staves.js": "./staves.js" },
+  "files": ["staves.js", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-GLYPHS"],
+  "engines": { "node": ">=20" },
+  "keywords": ["music", "notation", "sheet-music", "staff", "score", "tracker", "mod", "canvas", "piano", "education", "creative-coding"],
+  "author": "John Wylie",
+  "license": "MIT"
+}

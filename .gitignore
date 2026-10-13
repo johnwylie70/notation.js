@@ -1,0 +1,7 @@
+node_modules/
+# written by scripts/test-staves.mjs --shots
+shots/
+*.tgz
+.DS_Store
+.playwright-mcp/
+.circuitry/
