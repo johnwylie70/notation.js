@@ -262,7 +262,13 @@ function readMusic(what, step, o = {}) {
   if (what instanceof Sheet) {
     parts = [{ notes: what.notes, length: what.length }]
     more = { tempo: what.tempo, time: what.time, key: what.key, clef: what.clef, title: what.title }
-  } else if (typeof what === 'string' && what.trim()[0] === '{') return readSong(JSON.parse(what), o)
+  } else if (what && Array.isArray(what.sheet)) {
+    // A sheet as a host elsewhere sends it: [[what, length], …] and its own key, time, tempo and title.
+    const sheet = new Sheet(what)
+    for (const [note, length] of what.sheet) sheet.add(note, length ?? undefined)
+    return readMusic(sheet, step, o)
+  } else if (what && typeof what.packed === 'string') return readSong(unpackSong(Uint8Array.from(atob(what.packed), (c) => c.charCodeAt(0))), o)
+  else if (typeof what === 'string' && what.trim()[0] === '{') return readSong(JSON.parse(what), o)
   else if (isBytes(what)) return readSong(unpackSong(what), o)
   else if (isSong(what)) return readSong(what, o)
   else if (what && Array.isArray(what.parts)) { parts = what.parts; more = what } else if (isData(what)) parts = [{ notes: readData(what) }]
@@ -1194,7 +1200,7 @@ function paint(g, prims, c, t) {
 // A PAGE OF MUSIC on the screen: it lays itself out for its width, follows what plays, and listens to a learner.
 
 let theSound = null
-const STAGE = Symbol('staves')
+const STAGE = Symbol.for('staves.stage')
 const nowSeconds = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000
 
 class Page {
@@ -1272,10 +1278,9 @@ class Page {
     } catch (e) { this.wrap.remove(); throw e }
   }
   async fetch(file) {
-    // A file is looked for where the host says, else beside the page, else beside this library (which a scene keeps beside itself).
+    // A file is looked for where the host says ({ resolve }), else beside the page.
     const resolve = this.options.resolve || this.stage.resolve
-    let answer = await fetch(resolve ? resolve(file) : new URL(file, document.baseURI)).catch(() => null)
-    if ((!answer || !answer.ok) && !resolve) answer = await fetch(new URL(file, import.meta.url)).catch(() => answer)
+    const answer = await fetch(resolve ? resolve(file) : new URL(file, document.baseURI)).catch(() => null)
     if (!answer || !answer.ok) throw new Error(`The song "${file}" could not be loaded (${answer ? answer.status : 'no answer'}), so there is nothing to show`)
     const bytes = new Uint8Array(await answer.arrayBuffer())
     if (bytes[bytes.findIndex((b) => b > 32)] === 123) return readSong(JSON.parse(new TextDecoder().decode(bytes)), this.options)
@@ -1334,9 +1339,15 @@ class Page {
       this.all = true
       this.times = null
     }
-    const natural = (this.plan ? this.plan.height : 8 * S) + 2 * pad
+    let natural = (this.plan ? this.plan.height : 8 * S) + 2 * pad
     const fill = o.at === 'fill'
-    const h = Math.max(40, Math.min(fill ? H - 2 * m : given && rect.height ? rect.height : o.height || Math.min(natural, Math.max(H * (o.share || 0.46), 14 * S)), H))
+    // Left to itself it takes the room its music needs, up to about half the picture, and then as many whole lines of music as fit.
+    const most = Math.max(H * (o.share || 0.46), 14 * S)
+    if (this.plan && natural > most) {
+      const fits = this.plan.systems.filter((sys) => sys.y + sys.h + 2 * pad <= most).pop() || this.plan.systems[0]
+      natural = fits.y + fits.h + 2 * pad
+    }
+    const h = Math.max(40, Math.min(fill ? H - 2 * m : given && rect.height ? rect.height : o.height || natural, H))
     const x = given ? rect.x ?? m : o.at === 'right' ? W - w - m : o.at === 'left' ? m : (W - w) / 2
     const y = given ? rect.y ?? m : o.at === 'bottom' ? H - h - m : o.at === 'middle' || o.at === 'center' || o.at === 'centre' ? (H - h) / 2 : m
     const [left, top] = stage.origin()
@@ -1436,22 +1447,12 @@ class Page {
     const make = method(sound, 'makeSynth', 'make_synth')
     const main = method(sound, 'playNotes', 'play_notes')
     if (!sound && !Page.said) { Page.said = true; console.info('staves.js: the music is followed in silence, because no sound was given to play it with. Give one: useSound({ playNotes, makeSynth, soundTime })') }
-    score.staves.forEach((staff, i) => {
-      if (staff.percussion || !sound) return
-      const words = []
-      let at = from
-      for (const e of staff.events) {
-        if (e.end <= from) continue
-        const start = Math.max(e.start, from)
-        if (start > at) words.push('-:' + (start - at) / step)
-        words.push(e.sounds.map(noteName).join('+') + ':' + (e.end - start) / step)
-        at = e.end
-      }
-      if (!words.length) return
+    this.words(from).forEach((text, i) => {
+      if (!text || !sound) return
       // Each staff plays on a synth of its own (made once, and kept), unless the page was given one; or on the sound's main synth.
       const synth = this.options.synth || (make && (i > 0 || this.options.voice || !main) ? (this.voices[i] ||= make(this.options.voice || 'keys')) : null)
       const play = method(synth, 'playNotes', 'play_notes') || main
-      if (play) this.tunes.push(play(words.join(' '), step / TICKS * 60 / bpm, { at: t0, hold: 0.94 }))
+      if (play) this.tunes.push(play(text, step / TICKS * 60 / bpm, { at: t0, hold: 0.94 }))
     })
     this.playing = true
     this.repeat = !!o.repeat
@@ -1468,6 +1469,46 @@ class Page {
       return t * TICKS < from ? null : t
     }
     return this
+  }
+  /** Each tuned staff's notes from a tick on, as playNotes takes them, a step being the finest length written: "C4:2 -:2 E4+G4:4". */
+  words(from = 0) {
+    const step = this.score.grid
+    return this.score.staves.map((staff) => {
+      if (staff.percussion) return ''
+      const words = []
+      let at = from
+      for (const e of staff.events) {
+        if (e.end <= from) continue
+        const start = Math.max(e.start, from)
+        if (start > at) words.push('-:' + (start - at) / step)
+        words.push(e.sounds.map(noteName).join('+') + ':' + (e.end - start) / step)
+        at = e.end
+      }
+      return words.join(' ')
+    })
+  }
+  /**
+   * For a host that plays the music itself, somewhere else: follow from a moment on its clock. `now` is its clock
+   * as it sent this, `at` when the music begins on that clock, `from` the beat it begins at.
+   */
+  run(o) {
+    this.stop()
+    const score = this.score
+    if (!score) return
+    this.stage.sync(o.now)
+    const theirs = method(this.sound, 'soundTime', 'sound_time')
+    const bpm = o.bpm || score.tempo, from = (o.from || 0) * TICKS, late = o.latency ?? 0.04
+    this.playing = true
+    this.source = () => {
+      const t = ((theirs ? theirs() : nowSeconds() - this.stage.offset) - late - o.at) * bpm / 60 + from / TICKS
+      if (t * TICKS >= score.length) { this.finish(); return null }
+      return t * TICKS < from ? null : t
+    }
+  }
+  /** For a host that reads the song's place itself: where the song is now, as song.position gives it. */
+  feed(position) {
+    this.fed = position
+    if (!this.feeding) { this.feeding = true; this.follow({ get position() { return this.page.fed }, page: this }) }
   }
   finish() {
     this.playing = false
@@ -1727,7 +1768,9 @@ class Page {
     if (!score) return this
     const beat = clamp(bar - 1, 0, score.bars - 1) * score.bar / TICKS
     const song = this.seekable, go = method(song, 'seek')
-    if (go && score.song && this.following === song) { const place = score.song.place(beat); go(place.order, place.row) } else if (this.playing) this.play({ from: beat, repeat: this.repeat })
+    if (score.song && this.feeding) this.stage.tell(this.id, 'seek', score.song.place(beat))
+    else if (go && score.song && this.following === song) { const place = score.song.place(beat); go(place.order, place.row) } else if (this.playing && this.tunes.length === 0 && this.stage.listener) this.stage.tell(this.id, 'again', beat)
+    else if (this.playing) this.play({ from: beat, repeat: this.repeat })
     else if (!this.source) this.tick = beat * TICKS
     return this
   }
@@ -1871,6 +1914,7 @@ class Page {
     const r = this.result, along = this.along
     r.percent = r.total ? Math.round(100 * Math.max(0, r.right - r.wrong * 0.5) / r.total) : 0
     if (along.errors.length) r.timing = along.errors.reduce((a, b) => a + b, 0) / along.errors.length
+    this.stage.tell(this.id, 'result', { ...r })
   }
   alongDone() {
     const along = this.along
@@ -1895,6 +1939,9 @@ class Stage {
     this.colours = {}
     this.listener = null
     this.told = []
+    this.beats = false // the listener is called every frame it has answered the last (`ack`)
+    this.armed = true
+    this.offset = Infinity // how far a host's clock is behind this page's: the shortest journey seen
     if (!this.canvas && getComputedStyle(host).position === 'static') host.style.position = 'relative'
     const tick = (now) => {
       if (!host.isConnected) return this.close()
@@ -1903,7 +1950,14 @@ class Stage {
         if (!page.wrap.isConnected) { page.remove(); continue }
         try { page.frame(now) } catch (e) { page.fail(e); page.all = true }
       }
-      if (this.listener && this.told.length) { const told = this.told; this.told = []; this.listener(told) }
+      const beat = this.beats && this.armed
+      if (this.listener && (this.told.length || beat)) {
+        const told = this.told
+        this.told = []
+        if (beat) this.armed = false
+        // (As JSON text: a host that carries this elsewhere need know nothing of its shape.)
+        this.listener({ t: told.length ? JSON.stringify(told) : '', b: beat ? 1 : 0 })
+      }
     }
     this.raf = requestAnimationFrame(tick)
   }
@@ -1911,6 +1965,7 @@ class Stage {
   size() { return [this.host.clientWidth, this.host.clientHeight] }
   origin() { return this.canvas ? [this.host.offsetLeft, this.host.offsetTop] : [0, 0] }
   tell(id, what, more) { if (this.listener) this.told.push(id, what, more) }
+  sync(now) { if (typeof now === 'number') this.offset = Math.min(this.offset, nowSeconds() - now) }
   close() {
     cancelAnimationFrame(this.raf)
     for (const page of [...this.pages]) page.remove()
@@ -1943,8 +1998,18 @@ function api(stage) {
     set: (id, name, value) => { const page = stage.pages.find((p) => p.id === id); if (page) { if (name in page && !(name in page.options)) page[name] = value; else { page.options[SPELLING[name] || name] = value; page.planKey = null } } },
     call: (id, name, ...args) => { const page = stage.pages.find((p) => p.id === id); if (page && typeof page[name] === 'function') page[name](...args) },
     drop: (id) => { const page = stage.pages.find((p) => p.id === id); if (page) page.remove() },
-    /** What happened is handed over once a frame, as a flat list: page id, what ("note", "bar", "tap", "right", "wrong", "done"), and its details. */
+    /** The page itself, by its number: what a keyboard in the page is tied to. */
+    page: (id) => stage.pages.find((p) => p.id === id) || null,
+    /** The words a page would play, for a host that does the playing: told back as "words". */
+    words: (id, from) => { const page = stage.pages.find((p) => p.id === id); if (page && page.score) stage.tell(id, 'words', { staves: page.words(Math.round((from || 0) * TICKS)), step: page.score.grid / TICKS, tempo: page.score.tempo, from: from || 0 }) },
+    /**
+     * What happened is handed over once a frame: { t: JSON text of a flat list of page id, what, details… }. `what` is "note",
+     * "bar", "tap", "right", "wrong", "result", "done", "words", "seek" or "again".
+     */
     listen: (fn) => { stage.listener = fn },
+    /** A host that must look at something every frame is called every frame instead, once it has answered the last call with ack(). */
+    beat: (on) => { stage.beats = on !== false; stage.armed = true },
+    ack: () => { stage.armed = true },
   }
 }
 
@@ -1985,9 +2050,10 @@ function theme(colours, which) {
 // The same function with no canvas named: for a page (and a pictures.js scene) with one canvas.
 const showNotes = (...args) => staves().showNotes(...args)
 
+const show_notes = showNotes, make_sheet = makeSheet, use_sound = useSound
+
 export {
-  staves, showNotes, makeSheet, useSound, theme, version,
-  showNotes as show_notes, makeSheet as make_sheet, useSound as use_sound,
+  staves, showNotes, makeSheet, useSound, theme, version, show_notes, make_sheet, use_sound,
   // The parts that need no screen, for a program that wants the written music itself (and for the tests).
   readMusic, readTune, readSong, unpackSong, write, writeLength, layout, guessKey, chooseClef, spell, keyOf, timeOf, noteNumber, noteName, lengthBeats, glyphBox, Sheet,
 }

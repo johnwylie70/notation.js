@@ -115,7 +115,7 @@ It needs no sound to draw music. Nothing else is loaded: staves.js is one file, 
 | `showNotes(["C4", null, ["C4", "E4"]], "quarter")` | the same as a list: `null` is a rest, a list inside is a chord |
 | `showNotes(sheet)` | a sheet you write a note at a time (below) |
 | `showNotes(song, { channels: [0, 1] })` | a tracker song: the JSON as an object or as text, or the bytes `await packSong(bytes)` makes of a MOD or XM |
-| `showNotes("songs/tune.json")` | the name of a song file, which is fetched |
+| `showNotes("songs/tune.json")` | the name of a song file, which is fetched from beside the page (in a scene, `await loadJSON("songs/tune.json")` reads one from beside the scene) |
 | `showNotes([{ note: "C4", start: 0, length: 1 }, { notes: ["E4", "G4"], start: 1, length: 2 }])` | plain data, in beats: anything can make this |
 
 ![A line of music with eighths and sixteenths beamed, a dotted note, sharps and flats, chords, a rest, a tie over a bar line and notes on ledger lines](docs/images/mixed.png)
