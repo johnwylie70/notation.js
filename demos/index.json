@@ -8,8 +8,23 @@
       "kind": "html",
       "entry": "main.py",
       "files": [
+        "main.py"
+      ],
+      "thumbnail": "thumbnail.jpg",
+      "version": 2026101301,
+      "tags": [
+        "learn"
+      ]
+    },
+    {
+      "id": "night-drive",
+      "title": "Night Drive",
+      "summary": "A song plays and its tune and bass are written out as sheet music as it goes: the notes that are sounding light up, a line moves through the bar, and the page turns by itself. Choose which parts to show, or open the song's file and change a note.",
+      "kind": "html",
+      "entry": "main.py",
+      "files": [
         "main.py",
-        "main.js"
+        "night_drive.json"
       ],
       "thumbnail": "thumbnail.jpg",
       "version": 2026101301,

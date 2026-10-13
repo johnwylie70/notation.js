@@ -109,9 +109,14 @@ A page is never the size of the scene (it is a sheet of paper over part of it), 
 - pictures.js itself grew by 2 KB; a scene that shows no music asks for nothing new.
 - A Pyctures single-file page with no sheet music is 195,334 characters on the `notation` branch, where the main it was cut from is 193,990: 1.3 KB more (the two things asked of the sound, the handle, and the stand-in for a library, which the dials now share). Pyctures' scenes test held such a page under 195,000, which the effects' branch is 14 short of; the `notation` branch raises that line to the one limit for the project, 200,000.
 
-## The demo
+## The demos
 
-`demos/twinkle/` here is in the shape of `public/demos/*`: `main.py` (the entry), `main.js` (its twin, the same program line for line), and `thumbnail.jpg` at 600 × 600; `demos/index.json` has its entry in the form of `public/demos/index.json` (`tags: ["learn"]`). It is this library's own `examples/twinkle.js`, in the form of the app's learn demos, without the first lines that fetched the library. It has not been copied anywhere: the catalogue's test pins the list of learn demos. The Python file imports `pyctures` and `pynotation` (which brings the sound), so it runs in the app once step 3 above is done; the JavaScript one once steps 1 and 2 are. `demos/prove-twinkle.mjs` runs the Python file with `pyctures run` in Chromium and WebKit and checks that the sound is on, that every note lights in order, and that the synth is sounding each note while it is lit.
+`demos/` here has two folders in the shape of `public/demos/*`, each with `main.py` (the entry), `main.js` (its twin, the same program part for part, kept here and not shipped) and `thumbnail.jpg` at 600 × 600, and `demos/index.json` has their entries in the form of `public/demos/index.json` (`tags: ["learn"]`).
+
+- **`twinkle/`**: a tune written as code, shown as sheet music, each note lighting as it sounds and a star for each. It imports `pyctures` and `pynotation` only.
+- **`night-drive/`**: a tracker song written out as it plays, tune and bass on two staves, a ring for each note. It has the song's file beside it, `night_drive.json`, which its entry lists in `files`: data, not code. It imports `pyctures` and `pynotation` only: `page.play()` on a page that shows a song plays the song.
+
+Both are laid out for a narrow pane: a short comment line above each part, nothing beside code but the note on the pynotation import, and no line over 70 characters after the header. `demos/prove-twinkle.mjs` and `demos/prove-night-drive.mjs` run the Python files with `pyctures run` in Chromium and WebKit and check that the sound is on and that what is lit is what is sounding.
 
 ## Words for the help pages
 
